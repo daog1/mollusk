@@ -266,12 +266,20 @@ impl InstructionResult {
     }
 
     /// Perform checks on the instruction result.
+    ///
+    /// Note: Uses `Rent::default()`. If you wish to provide a custom `Rent`
+    /// instance, or the `Rent` instance on your `Mollusk` instance, use
+    /// `run_checks_with_context`.
     pub fn run_checks_with_config(&self, checks: &[Check], config: &Config) -> bool {
         let rent = &Rent::default();
         self.run_checks_with_context(checks, &DefaultCheckContext { config, rent })
     }
 
     /// Perform checks on the instruction result, panicking on any mismatches.
+    ///
+    /// Note: Uses `Rent::default()`. If you wish to provide a custom `Rent`
+    /// instance, or the `Rent` instance on your `Mollusk` instance, use
+    /// `run_checks_with_context`.
     pub fn run_checks(&self, checks: &[Check]) {
         self.run_checks_with_config(
             checks,
