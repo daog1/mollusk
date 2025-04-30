@@ -393,7 +393,7 @@ use {
     agave_feature_set::FeatureSet,
     agave_precompiles::get_precompile,
     mollusk_svm_error::error::{MolluskError, MolluskPanic},
-    result::Config,
+    result::{Config, DefaultCheckContext},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_fee_structure::FeeStructure,
@@ -682,7 +682,13 @@ impl Mollusk {
         #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
         fuzz::generate_fixtures_from_mollusk_test(self, instruction, accounts, &result);
 
-        result.run_checks_with_config(checks, &self.config);
+        result.run_checks_with_context(
+            checks,
+            &DefaultCheckContext {
+                config: &self.config,
+                rent: &self.sysvars.rent,
+            },
+        );
         result
     }
 

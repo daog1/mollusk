@@ -5,6 +5,7 @@ use {
     solana_instruction::error::InstructionError,
     solana_program_error::ProgramError,
     solana_pubkey::Pubkey,
+    solana_rent::Rent,
 };
 
 macro_rules! compare {
@@ -122,6 +123,33 @@ impl Default for Config {
     }
 }
 
+/// A trait for providing context to the checks.
+///
+/// Developers who run checks on standalone results, rather than passing checks
+/// directly to methods like `Mollusk::process_and_validate_instruction`, may
+/// wish to customize the context in which the checks are run. For example,
+/// one may wish to evaluate resulting account lamports with a custom Rent
+/// configuration. This trait allows such customization.
+pub trait CheckContext {
+    fn config(&self) -> &Config;
+    fn rent(&self) -> &Rent;
+}
+
+pub(crate) struct DefaultCheckContext<'a> {
+    pub config: &'a Config,
+    pub rent: &'a Rent,
+}
+
+impl CheckContext for DefaultCheckContext<'_> {
+    fn config(&self) -> &Config {
+        self.config
+    }
+
+    fn rent(&self) -> &Rent {
+        self.rent
+    }
+}
+
 impl InstructionResult {
     /// Get an account from the resulting accounts by its pubkey.
     pub fn get_account(&self, pubkey: &Pubkey) -> Option<&Account> {
@@ -131,9 +159,10 @@ impl InstructionResult {
             .map(|(_, a)| a)
     }
 
-    /// Perform checks on the instruction result.
-    pub fn run_checks_with_config(&self, checks: &[Check], config: &Config) -> bool {
-        let c = config;
+    /// Perform checks on the instruction result, but with a custom context.
+    /// See `CheckContext` for more details.
+    pub fn run_checks_with_context<C: CheckContext>(&self, checks: &[Check], context: &C) -> bool {
+        let c = context.config();
         let mut pass = true;
         for check in checks {
             match &check.check {
@@ -199,6 +228,17 @@ impl InstructionResult {
                                     resulting_account == &Account::default(),
                                 );
                             }
+                            AccountStateCheck::RentExempt => {
+                                pass &= compare!(
+                                    c,
+                                    "account_rent_exempt",
+                                    true,
+                                    context.rent().is_exempt(
+                                        resulting_account.lamports,
+                                        resulting_account.data.len()
+                                    ),
+                                );
+                            }
                         }
                     }
                     if let Some((offset, check_data_slice)) = account.check_data_slice {
@@ -223,6 +263,12 @@ impl InstructionResult {
             }
         }
         pass
+    }
+
+    /// Perform checks on the instruction result.
+    pub fn run_checks_with_config(&self, checks: &[Check], config: &Config) -> bool {
+        let rent = &Rent::default();
+        self.run_checks_with_context(checks, &DefaultCheckContext { config, rent })
     }
 
     /// Perform checks on the instruction result, panicking on any mismatches.
@@ -484,6 +530,7 @@ impl<'a> Check<'a> {
 
 enum AccountStateCheck {
     Closed,
+    RentExempt,
 }
 
 struct AccountCheck<'a> {
@@ -545,6 +592,11 @@ impl<'a> AccountCheckBuilder<'a> {
 
     pub fn owner(mut self, owner: &'a Pubkey) -> Self {
         self.check.check_owner = Some(owner);
+        self
+    }
+
+    pub fn rent_exempt(mut self) -> Self {
+        self.check.check_state = Some(AccountStateCheck::RentExempt);
         self
     }
 
