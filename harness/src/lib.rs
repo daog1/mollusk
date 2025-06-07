@@ -446,6 +446,7 @@ pub mod file;
 pub mod fuzz;
 pub mod program;
 pub mod sysvar;
+pub mod vm;
 
 // Re-export result module from mollusk-svm-result crate
 pub use mollusk_svm_result as result;
@@ -457,15 +458,14 @@ use {
         sysvar::Sysvars,
     },
     agave_feature_set::FeatureSet,
-    agave_precompiles::get_precompile,
+    mollusk_svm_agave::AgaveSVM,
     mollusk_svm_error::error::{MolluskError, MolluskPanic},
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_fee_structure::FeeStructure,
-    solana_hash::Hash,
     solana_instruction::{AccountMeta, Instruction},
-    solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext},
+    solana_log_collector::LogCollector,
     solana_pubkey::Pubkey,
     solana_timings::ExecuteTimings,
     solana_transaction_context::TransactionContext,
@@ -483,7 +483,7 @@ pub struct Mollusk {
     pub compute_budget: ComputeBudget,
     pub feature_set: FeatureSet,
     pub fee_structure: FeeStructure,
-    pub logger: Option<Rc<RefCell<solana_log_collector::LogCollector>>>,
+    pub logger: Option<Rc<RefCell<LogCollector>>>,
     pub program_cache: ProgramCache,
     pub sysvars: Sysvars,
     #[cfg(feature = "fuzz-fd")]
@@ -590,25 +590,36 @@ impl Mollusk {
         instruction: &Instruction,
         accounts: &[(Pubkey, Account)],
     ) -> InstructionResult {
+        // [VM]: We can still track these in here, we just need the interface
+        // to accept these mutable inputs somehow.
         let mut compute_units_consumed = 0;
         let mut timings = ExecuteTimings::default();
 
+        // [VM]: The concept of a precompile is a Solana mainnet-beta thing
+        // (FD/Agave)
         let loader_key = if crate::program::precompile_keys::is_precompile(&instruction.program_id)
         {
             crate::program::loader_keys::NATIVE_LOADER
         } else {
+            // [VM]: The program cache is really only required to use the
+            // Agave program-runtime API.
             self.program_cache
                 .load_program(&instruction.program_id)
                 .or_panic_with(MolluskError::ProgramNotCached(&instruction.program_id))
                 .account_owner()
         };
 
+        // [VM]: This does de-duping, but also lays out each
+        // `InstructionAccount`, which has index values like `index_in_caller`.
+        // I'm leaning toward thinking this is an Agave thing, but it could be
+        // Solana mainnet-beta more broadly.
         let CompiledAccounts {
             program_id_index,
             instruction_accounts,
             transaction_accounts,
         } = crate::compile_accounts::compile_accounts(instruction, accounts, loader_key);
 
+        // [VM]: Same here as above.
         let mut transaction_context = TransactionContext::new(
             transaction_accounts,
             self.sysvars.rent.clone(),
@@ -616,46 +627,32 @@ impl Mollusk {
             self.compute_budget.max_instruction_trace_length,
         );
 
+        // [VM]: This whole block is just the setup to invoke the Agave sBPF VM.
         let invoke_result = {
             let mut program_cache = self.program_cache.cache();
             let sysvar_cache = self.sysvars.setup_sysvar_cache(accounts);
-            let mut invoke_context = InvokeContext::new(
+            AgaveSVM::process_instruction(
+                instruction,
+                &instruction_accounts,
                 &mut transaction_context,
                 &mut program_cache,
-                EnvironmentConfig::new(
-                    Hash::default(),
-                    self.fee_structure.lamports_per_signature,
-                    0,
-                    &|_| 0,
-                    Arc::new(self.feature_set.clone()),
-                    &sysvar_cache,
-                ),
-                self.logger.clone(),
+                &sysvar_cache,
+                program_id_index,
                 self.compute_budget,
-            );
-            if let Some(precompile) = get_precompile(&instruction.program_id, |feature_id| {
-                invoke_context.get_feature_set().is_active(feature_id)
-            }) {
-                invoke_context.process_precompile(
-                    precompile,
-                    &instruction.data,
-                    &instruction_accounts,
-                    &[program_id_index],
-                    std::iter::once(instruction.data.as_ref()),
-                )
-            } else {
-                invoke_context.process_instruction(
-                    &instruction.data,
-                    &instruction_accounts,
-                    &[program_id_index],
-                    &mut compute_units_consumed,
-                    &mut timings,
-                )
-            }
+                Arc::new(self.feature_set.clone()),
+                self.fee_structure.lamports_per_signature,
+                self.logger.clone(),
+                &mut compute_units_consumed,
+                &mut timings,
+            )
         };
 
+        // [VM]: This should be a required output in the interface.
         let return_data = transaction_context.get_return_data().1.to_vec();
 
+        // [VM]: This should still be done in here, since the concept of a
+        // "resulting account" and how it's compared to the inputs is a Mollusk
+        // API thing.
         let resulting_accounts: Vec<(Pubkey, Account)> = if invoke_result.is_ok() {
             accounts
                 .iter()
@@ -678,6 +675,8 @@ impl Mollusk {
             accounts.to_vec()
         };
 
+        // [VM]: Everything else needed for this type, like the code, should be
+        // required outputs in the interface.
         InstructionResult {
             compute_units_consumed,
             execution_time: timings.details.execute_us.0,

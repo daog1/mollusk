@@ -9,6 +9,7 @@ members = [
     "programs/*",
     "result",
     "test-programs/*",
+    "vm/*",
 ]
 resolver = "2"
 
@@ -31,6 +32,7 @@ criterion = "0.5.1"
 ed25519-dalek = "=1.0.1"
 libsecp256k1 = "0.6.0"
 mollusk-svm = { path = "harness", version = "0.1.5" }
+mollusk-svm-agave = { path = "vm/agave", version = "0.1.5" }
 mollusk-svm-bencher = { path = "bencher", version = "0.1.5" }
 mollusk-svm-cli = { path = "cli", version = "0.1.5" }
 mollusk-svm-error = { path = "error", version = "0.1.5" }

@@ -1,0 +1,22 @@
+[package]
+name = "mollusk-svm-agave"
+description = "Agave SVM implementation for Mollusk."
+authors = { workspace = true }
+repository = { workspace = true }
+readme = { workspace = true }
+license-file = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+agave-feature-set = { workspace = true }
+agave-precompiles = { workspace = true }
+solana-compute-budget = { workspace = true }
+solana-hash = { workspace = true }
+solana-instruction = { workspace = true }
+solana-log-collector = { workspace = true }
+solana-program-error = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-sysvar = { workspace = true }
+solana-timings = { workspace = true }
+solana-transaction-context = { workspace = true }
