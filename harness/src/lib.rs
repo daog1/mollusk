@@ -454,13 +454,9 @@ pub use mollusk_svm_result as result;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 use mollusk_svm_result::Compare;
 use {
-    crate::{
-        account_store::AccountStore, compile_accounts::CompiledAccounts, program::ProgramCache,
-        sysvar::Sysvars,
-    },
+    crate::{account_store::AccountStore, compile_accounts::CompiledAccounts, sysvar::Sysvars},
     agave_feature_set::FeatureSet,
     mollusk_svm_agave::AgaveSVM,
-    mollusk_svm_error::error::{MolluskError, MolluskPanic},
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
@@ -485,8 +481,8 @@ pub struct Mollusk {
     pub feature_set: FeatureSet,
     pub fee_structure: FeeStructure,
     pub logger: Option<Rc<RefCell<LogCollector>>>,
-    pub program_cache: ProgramCache,
     pub sysvars: Sysvars,
+    pub svm: AgaveSVM,
     #[cfg(feature = "fuzz-fd")]
     pub slot: u64,
 }
@@ -516,9 +512,9 @@ impl Default for Mollusk {
             compute_budget: ComputeBudget::default(),
             feature_set,
             fee_structure: FeeStructure::default(),
-            program_cache: ProgramCache::default(),
-            sysvars: Sysvars::default(),
             logger: None,
+            sysvars: Sysvars::default(),
+            svm: AgaveSVM::default(),
             #[cfg(feature = "fuzz-fd")]
             slot: 0,
         }
@@ -570,7 +566,7 @@ impl Mollusk {
         elf: &[u8],
         loader_key: &Pubkey,
     ) {
-        self.program_cache.add_program(
+        self.svm.program_cache.add_program(
             program_id,
             loader_key,
             elf,
@@ -596,19 +592,7 @@ impl Mollusk {
         let mut compute_units_consumed = 0;
         let mut timings = ExecuteTimings::default();
 
-        // [VM]: The concept of a precompile is a Solana mainnet-beta thing
-        // (FD/Agave)
-        let loader_key = if crate::program::precompile_keys::is_precompile(&instruction.program_id)
-        {
-            crate::program::loader_keys::NATIVE_LOADER
-        } else {
-            // [VM]: The program cache is really only required to use the
-            // Agave program-runtime API.
-            self.program_cache
-                .load_program(&instruction.program_id)
-                .or_panic_with(MolluskError::ProgramNotCached(&instruction.program_id))
-                .account_owner()
-        };
+        let loader_key = self.svm.get_loader_key(&instruction.program_id);
 
         // [VM]: This does de-duping, but also lays out each
         // `InstructionAccount`, which has index values like `index_in_caller`.
@@ -630,13 +614,11 @@ impl Mollusk {
 
         // [VM]: This whole block is just the setup to invoke the Agave sBPF VM.
         let invoke_result = {
-            let mut program_cache = self.program_cache.cache();
             let sysvar_cache = self.sysvars.setup_sysvar_cache(accounts);
-            AgaveSVM::process_instruction(
+            self.svm.process_instruction(
                 instruction,
                 &instruction_accounts,
                 &mut transaction_context,
-                &mut program_cache,
                 &sysvar_cache,
                 program_id_index,
                 self.compute_budget,
@@ -1049,7 +1031,8 @@ impl Mollusk {
     pub fn with_context<AS: AccountStore>(self, mut account_store: AS) -> MolluskContext<AS> {
         // For convenience, load all program accounts into the account store,
         // but only if they don't exist.
-        self.program_cache
+        self.svm
+            .program_cache
             .get_all_keyed_program_accounts()
             .into_iter()
             .for_each(|(pubkey, account)| {

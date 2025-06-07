@@ -11,12 +11,15 @@ version = { workspace = true }
 [dependencies]
 agave-feature-set = { workspace = true }
 agave-precompiles = { workspace = true }
+mollusk-svm-agave-programs = { workspace = true }
+mollusk-svm-error = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-hash = { workspace = true }
 solana-instruction = { workspace = true }
 solana-log-collector = { workspace = true }
 solana-program-error = { workspace = true }
 solana-program-runtime = { workspace = true }
+solana-pubkey = { workspace = true }
 solana-sysvar = { workspace = true }
 solana-timings = { workspace = true }
 solana-transaction-context = { workspace = true }

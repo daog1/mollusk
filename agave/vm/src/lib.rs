@@ -6,29 +6,47 @@
 use {
     agave_feature_set::FeatureSet,
     agave_precompiles::get_precompile,
+    mollusk_svm_agave_programs::ProgramCache,
+    mollusk_svm_error::error::{MolluskError, MolluskPanic},
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_hash::Hash,
     solana_instruction::{error::InstructionError, Instruction},
     solana_log_collector::LogCollector,
     solana_program_runtime::{
         invoke_context::{EnvironmentConfig, InvokeContext},
-        loaded_programs::ProgramCacheForTxBatch,
         sysvar_cache::SysvarCache,
     },
+    solana_pubkey::Pubkey,
     solana_timings::ExecuteTimings,
     solana_transaction_context::{InstructionAccount, TransactionContext},
     std::{cell::RefCell, rc::Rc, sync::Arc},
 };
 
-pub struct AgaveSVM;
+#[derive(Default)]
+pub struct AgaveSVM {
+    pub program_cache: ProgramCache,
+}
 
 impl AgaveSVM {
+    pub fn get_loader_key(&self, program_id: &Pubkey) -> Pubkey {
+        if mollusk_svm_agave_programs::precompile_keys::is_precompile(program_id) {
+            mollusk_svm_agave_programs::loader_keys::NATIVE_LOADER
+        } else {
+            // [VM]: The program cache is really only required to use the
+            // Agave program-runtime API.
+            self.program_cache
+                .load_program(program_id)
+                .or_panic_with(MolluskError::ProgramNotCached(program_id))
+                .account_owner()
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn process_instruction(
+        &self,
         instruction: &Instruction,
         instruction_accounts: &[InstructionAccount],
         transaction_context: &mut TransactionContext,
-        program_cache: &mut ProgramCacheForTxBatch,
         sysvar_cache: &SysvarCache,
         program_id_index: u16,
         compute_budget: ComputeBudget,
@@ -38,9 +56,11 @@ impl AgaveSVM {
         compute_units_consumed: &mut u64,
         timings: &mut ExecuteTimings,
     ) -> Result<(), InstructionError> {
+        let mut program_cache = self.program_cache.cache();
+
         let mut invoke_context = InvokeContext::new(
             transaction_context,
-            program_cache,
+            &mut program_cache,
             EnvironmentConfig::new(
                 Hash::default(),
                 lamports_per_signature,
