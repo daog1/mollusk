@@ -1,0 +1,16 @@
+[package]
+name = "mollusk-svm-compile-accounts"
+description = "Account compilation utilities for Mollusk SVM."
+authors = { workspace = true }
+repository = { workspace = true }
+readme = { workspace = true }
+license-file = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+mollusk-svm-keys = { workspace = true }
+solana-account = { workspace = true }
+solana-instruction = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-transaction-context = { workspace = true }

@@ -1,5 +1,9 @@
-//! Instruction <-> Transaction account compilation, with key deduplication,
-//! privilege handling, and program account stubbing.
+//! # Mollusk SVM Compile Accounts
+//!
+//! This crate provides account compilation utilities for Mollusk SVM.
+//!
+//! It handles instruction <-> transaction account compilation, with key
+//! deduplication, privilege handling, and program account stubbing.
 
 use {
     mollusk_svm_keys::{
@@ -15,12 +19,20 @@ use {
     solana_transaction_context::{InstructionAccount, TransactionAccount},
 };
 
+/// Compiled accounts ready for transaction processing.
 pub struct CompiledAccounts {
     pub program_id_index: u16,
     pub instruction_accounts: Vec<InstructionAccount>,
     pub transaction_accounts: Vec<TransactionAccount>,
 }
 
+/// Compiles instruction and input accounts into the format expected by
+/// Solana's transaction processing.
+///
+/// This function handles:
+/// * Key deduplication across instruction accounts
+/// * Privilege escalation (writable and signer flags)
+/// * Program account stubbing with the provided loader
 pub fn compile_accounts(
     instruction: &Instruction,
     accounts: &[(Pubkey, Account)],

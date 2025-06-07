@@ -1595,6 +1595,7 @@ dependencies = [
  "mollusk-svm-agave",
  "mollusk-svm-agave-programs",
  "mollusk-svm-agave-sysvars",
+ "mollusk-svm-compile-accounts",
  "mollusk-svm-error",
  "mollusk-svm-fuzz-fixture",
  "mollusk-svm-fuzz-fixture-firedancer",
@@ -1732,6 +1733,17 @@ dependencies = [
  "solana-pubkey",
  "solana-sdk-ids",
  "tokio",
+]
+
+[[package]]
+name = "mollusk-svm-compile-accounts"
+version = "0.1.5"
+dependencies = [
+ "mollusk-svm-keys",
+ "solana-account",
+ "solana-instruction",
+ "solana-pubkey",
+ "solana-transaction-context",
 ]
 
 [[package]]

@@ -440,7 +440,6 @@
 //! capabilities are provided by the respective fixture crates.
 
 pub mod account_store;
-mod compile_accounts;
 pub mod file;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 pub mod fuzz;
@@ -455,9 +454,10 @@ pub use mollusk_svm_result as result;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 use mollusk_svm_result::Compare;
 use {
-    crate::{account_store::AccountStore, compile_accounts::CompiledAccounts},
+    crate::account_store::AccountStore,
     agave_feature_set::FeatureSet,
     mollusk_svm_agave::AgaveSVM,
+    mollusk_svm_compile_accounts::{compile_accounts, CompiledAccounts},
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
@@ -601,7 +601,7 @@ impl Mollusk {
             program_id_index,
             instruction_accounts,
             transaction_accounts,
-        } = crate::compile_accounts::compile_accounts(instruction, accounts, loader_key);
+        } = compile_accounts(instruction, accounts, loader_key);
 
         // [VM]: Same here as above.
         let mut transaction_context = TransactionContext::new(

@@ -5,11 +5,9 @@
 //! Only available when the `fuzz-fd` feature is enabled.
 
 use {
-    crate::{
-        compile_accounts::{compile_accounts, CompiledAccounts},
-        Mollusk, DEFAULT_LOADER_KEY,
-    },
+    crate::{Mollusk, DEFAULT_LOADER_KEY},
     agave_feature_set::FeatureSet,
+    mollusk_svm_compile_accounts::{compile_accounts, CompiledAccounts},
     mollusk_svm_fuzz_fixture_firedancer::{
         context::{
             Context as FuzzContext, EpochContext as FuzzEpochContext,
