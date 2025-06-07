@@ -34,6 +34,7 @@ libsecp256k1 = "0.6.0"
 mollusk-svm = { path = "harness", version = "0.1.5" }
 mollusk-svm-agave = { path = "agave/vm", version = "0.1.5" }
 mollusk-svm-agave-programs = { path = "agave/programs", version = "0.1.5" }
+mollusk-svm-agave-sysvars = { path = "agave/sysvars", version = "0.1.5" }
 mollusk-svm-bencher = { path = "bencher", version = "0.1.5" }
 mollusk-svm-cli = { path = "cli", version = "0.1.5" }
 mollusk-svm-error = { path = "error", version = "0.1.5" }

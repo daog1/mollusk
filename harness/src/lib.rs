@@ -444,19 +444,21 @@ mod compile_accounts;
 pub mod file;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 pub mod fuzz;
-pub mod sysvar;
 pub mod vm;
 
 // Re-export program module from mollusk-svm-agave-programs crate
 pub use mollusk_svm_agave_programs as program;
+// Re-export sysvar module from mollusk-svm-agave-sysvars crate
+pub use mollusk_svm_agave_sysvars as sysvar;
 // Re-export result module from mollusk-svm-result crate
 pub use mollusk_svm_result as result;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 use mollusk_svm_result::Compare;
 use {
-    crate::{account_store::AccountStore, compile_accounts::CompiledAccounts, sysvar::Sysvars},
+    crate::{account_store::AccountStore, compile_accounts::CompiledAccounts},
     agave_feature_set::FeatureSet,
     mollusk_svm_agave::AgaveSVM,
+    mollusk_svm_agave_sysvars::Sysvars,
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,

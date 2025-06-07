@@ -1,5 +1,7 @@
 //! Module for working with Solana sysvars.
 
+#[cfg(feature = "fuzz")]
+use mollusk_svm_fuzz_fixture::sysvars::Sysvars as FuzzSysvars;
 use {
     solana_account::{Account, ReadableAccount},
     solana_clock::{Clock, Slot},
@@ -147,7 +149,7 @@ impl Sysvars {
         }
     }
 
-    pub(crate) fn setup_sysvar_cache(&self, accounts: &[(Pubkey, Account)]) -> SysvarCache {
+    pub fn setup_sysvar_cache(&self, accounts: &[(Pubkey, Account)]) -> SysvarCache {
         let mut sysvar_cache = SysvarCache::default();
 
         // First fill any sysvar cache entries from the provided accounts.
@@ -213,6 +215,35 @@ impl From<&Sysvars> for SysvarCache {
             }
         });
         sysvar_cache
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl From<&Sysvars> for FuzzSysvars {
+    fn from(input: &Sysvars) -> Self {
+        Self {
+            clock: input.clock.clone(),
+            epoch_rewards: input.epoch_rewards.clone(),
+            epoch_schedule: input.epoch_schedule.clone(),
+            rent: input.rent.clone(),
+            slot_hashes: SlotHashes::new(input.slot_hashes.slot_hashes()),
+            stake_history: input.stake_history.clone(),
+        }
+    }
+}
+
+#[cfg(feature = "fuzz")]
+impl From<&FuzzSysvars> for Sysvars {
+    fn from(input: &FuzzSysvars) -> Self {
+        Self {
+            clock: input.clock.clone(),
+            epoch_rewards: input.epoch_rewards.clone(),
+            epoch_schedule: input.epoch_schedule.clone(),
+            last_restart_slot: solana_sysvar::last_restart_slot::LastRestartSlot::default(),
+            rent: input.rent.clone(),
+            slot_hashes: SlotHashes::new(input.slot_hashes.slot_hashes()),
+            stake_history: input.stake_history.clone(),
+        }
     }
 }
 

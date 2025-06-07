@@ -1,0 +1,31 @@
+[package]
+name = "mollusk-svm-agave-sysvars"
+description = "Agave sysvar management for Mollusk."
+authors = { workspace = true }
+repository = { workspace = true }
+readme = { workspace = true }
+license-file = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+
+[features]
+fuzz = ["dep:mollusk-svm-fuzz-fixture"]
+
+[dependencies]
+bincode = { workspace = true }
+mollusk-svm-fuzz-fixture = { workspace = true, optional = true }
+solana-account = { workspace = true }
+solana-clock = { workspace = true }
+solana-epoch-rewards = { workspace = true }
+solana-epoch-schedule = { workspace = true }
+solana-hash = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-rent = { workspace = true }
+solana-sdk-ids = { workspace = true }
+solana-slot-hashes = { workspace = true }
+solana-stake-interface = { workspace = true }
+solana-sysvar = { workspace = true }
+solana-sysvar-id = { workspace = true }
+
+[dev-dependencies]

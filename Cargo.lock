@@ -1594,6 +1594,7 @@ dependencies = [
  "libsecp256k1",
  "mollusk-svm-agave",
  "mollusk-svm-agave-programs",
+ "mollusk-svm-agave-sysvars",
  "mollusk-svm-error",
  "mollusk-svm-fuzz-fixture",
  "mollusk-svm-fuzz-fixture-firedancer",
@@ -1675,6 +1676,27 @@ dependencies = [
  "solana-sdk-ids",
  "solana-stake-program",
  "solana-system-program",
+]
+
+[[package]]
+name = "mollusk-svm-agave-sysvars"
+version = "0.1.5"
+dependencies = [
+ "bincode",
+ "mollusk-svm-fuzz-fixture",
+ "solana-account",
+ "solana-clock",
+ "solana-epoch-rewards",
+ "solana-epoch-schedule",
+ "solana-hash",
+ "solana-program-runtime",
+ "solana-pubkey",
+ "solana-rent",
+ "solana-sdk-ids",
+ "solana-slot-hashes",
+ "solana-stake-interface",
+ "solana-sysvar",
+ "solana-sysvar-id",
 ]
 
 [[package]]

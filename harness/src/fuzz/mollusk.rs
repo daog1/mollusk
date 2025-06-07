@@ -8,46 +8,14 @@ use {
     crate::{sysvar::Sysvars, Mollusk},
     agave_feature_set::FeatureSet,
     mollusk_svm_fuzz_fixture::{
-        context::Context as FuzzContext, effects::Effects as FuzzEffects,
-        sysvars::Sysvars as FuzzSysvars, Fixture as FuzzFixture,
+        context::Context as FuzzContext, effects::Effects as FuzzEffects, Fixture as FuzzFixture,
     },
     mollusk_svm_result::InstructionResult,
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_instruction::Instruction,
     solana_pubkey::Pubkey,
-    solana_slot_hashes::SlotHashes,
-    solana_sysvar::last_restart_slot::LastRestartSlot,
 };
-
-impl From<&Sysvars> for FuzzSysvars {
-    fn from(input: &Sysvars) -> Self {
-        let slot_hashes = SlotHashes::new(&input.slot_hashes);
-        Self {
-            clock: input.clock.clone(),
-            epoch_rewards: input.epoch_rewards.clone(),
-            epoch_schedule: input.epoch_schedule.clone(),
-            rent: input.rent.clone(),
-            slot_hashes,
-            stake_history: input.stake_history.clone(),
-        }
-    }
-}
-
-impl From<&FuzzSysvars> for Sysvars {
-    fn from(input: &FuzzSysvars) -> Self {
-        let slot_hashes = SlotHashes::new(&input.slot_hashes);
-        Self {
-            clock: input.clock.clone(),
-            epoch_rewards: input.epoch_rewards.clone(),
-            epoch_schedule: input.epoch_schedule.clone(),
-            last_restart_slot: LastRestartSlot::default(),
-            rent: input.rent.clone(),
-            slot_hashes,
-            stake_history: input.stake_history.clone(),
-        }
-    }
-}
 
 pub struct ParsedFixtureContext {
     pub accounts: Vec<(Pubkey, Account)>,
