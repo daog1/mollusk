@@ -457,7 +457,6 @@ use {
     crate::account_store::AccountStore,
     agave_feature_set::FeatureSet,
     mollusk_svm_agave::AgaveSVM,
-    mollusk_svm_compile_accounts::{compile_accounts, CompiledAccounts},
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
@@ -466,7 +465,6 @@ use {
     solana_log_collector::LogCollector,
     solana_pubkey::Pubkey,
     solana_timings::ExecuteTimings,
-    solana_transaction_context::TransactionContext,
     std::{cell::RefCell, collections::HashSet, iter::once, rc::Rc, sync::Arc},
 };
 
@@ -591,33 +589,9 @@ impl Mollusk {
         let mut compute_units_consumed = 0;
         let mut timings = ExecuteTimings::default();
 
-        let loader_key = self.svm.get_loader_key(&instruction.program_id);
-
-        // [VM]: This does de-duping, but also lays out each
-        // `InstructionAccount`, which has index values like `index_in_caller`.
-        // I'm leaning toward thinking this is an Agave thing, but it could be
-        // Solana mainnet-beta more broadly.
-        let CompiledAccounts {
-            program_id_index,
-            instruction_accounts,
-            transaction_accounts,
-        } = compile_accounts(instruction, accounts, loader_key);
-
-        // [VM]: Same here as above.
-        let mut transaction_context = TransactionContext::new(
-            transaction_accounts,
-            self.svm.sysvars.rent.clone(),
-            self.compute_budget.max_instruction_stack_depth,
-            self.compute_budget.max_instruction_trace_length,
-        );
-
-        // [VM]: This whole block is just the setup to invoke the Agave sBPF VM.
-        let invoke_result = self.svm.process_instruction(
+        let (invoke_result, return_data, resulting_accounts) = self.svm.process_instruction(
             instruction,
             accounts,
-            &instruction_accounts,
-            &mut transaction_context,
-            program_id_index,
             self.compute_budget,
             Arc::new(self.feature_set.clone()),
             self.fee_structure.lamports_per_signature,
@@ -625,34 +599,6 @@ impl Mollusk {
             &mut compute_units_consumed,
             &mut timings,
         );
-
-        // [VM]: This should be a required output in the interface.
-        let return_data = transaction_context.get_return_data().1.to_vec();
-
-        // [VM]: This should still be done in here, since the concept of a
-        // "resulting account" and how it's compared to the inputs is a Mollusk
-        // API thing.
-        let resulting_accounts: Vec<(Pubkey, Account)> = if invoke_result.is_ok() {
-            accounts
-                .iter()
-                .map(|(pubkey, account)| {
-                    transaction_context
-                        .find_index_of_account(pubkey)
-                        .map(|index| {
-                            let resulting_account = transaction_context
-                                .get_account_at_index(index)
-                                .unwrap()
-                                .borrow()
-                                .clone()
-                                .into();
-                            (*pubkey, resulting_account)
-                        })
-                        .unwrap_or((*pubkey, account.clone()))
-                })
-                .collect()
-        } else {
-            accounts.to_vec()
-        };
 
         // [VM]: Everything else needed for this type, like the code, should be
         // required outputs in the interface.

@@ -1648,6 +1648,7 @@ dependencies = [
  "agave-precompiles",
  "mollusk-svm-agave-programs",
  "mollusk-svm-agave-sysvars",
+ "mollusk-svm-compile-accounts",
  "mollusk-svm-error",
  "solana-account",
  "solana-compute-budget",
