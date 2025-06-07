@@ -444,10 +444,11 @@ mod compile_accounts;
 pub mod file;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]
 pub mod fuzz;
-pub mod program;
 pub mod sysvar;
 pub mod vm;
 
+// Re-export program module from mollusk-svm-agave-programs crate
+pub use mollusk_svm_agave_programs as program;
 // Re-export result module from mollusk-svm-result crate
 pub use mollusk_svm_result as result;
 #[cfg(any(feature = "fuzz", feature = "fuzz-fd"))]

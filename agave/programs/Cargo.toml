@@ -1,0 +1,30 @@
+[package]
+name = "mollusk-svm-agave-programs"
+description = "Agave program utilities for Mollusk."
+authors = { workspace = true }
+repository = { workspace = true }
+readme = { workspace = true }
+license-file = { workspace = true }
+edition = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+agave-feature-set = { workspace = true }
+bincode = { workspace = true }
+solana-account = { workspace = true }
+solana-bpf-loader-program = { workspace = true }
+solana-compute-budget = { workspace = true }
+solana-loader-v3-interface = { workspace = true }
+solana-loader-v4-interface = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-rent = { workspace = true }
+solana-sdk-ids = { workspace = true }
+solana-system-program = { workspace = true }
+
+[features]
+all-builtins = ["solana-stake-program"]
+
+[dependencies.solana-stake-program]
+workspace = true
+optional = true

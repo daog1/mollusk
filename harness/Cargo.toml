@@ -31,6 +31,7 @@ agave-precompiles = { workspace = true }
 bincode = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 mollusk-svm-agave = { workspace = true }
+mollusk-svm-agave-programs = { workspace = true }
 mollusk-svm-error = { workspace = true }
 mollusk-svm-fuzz-fixture = { workspace = true, optional = true }
 mollusk-svm-fuzz-fixture-firedancer = { workspace = true, optional = true }

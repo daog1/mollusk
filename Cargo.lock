@@ -1593,6 +1593,7 @@ dependencies = [
  "ed25519-dalek",
  "libsecp256k1",
  "mollusk-svm-agave",
+ "mollusk-svm-agave-programs",
  "mollusk-svm-error",
  "mollusk-svm-fuzz-fixture",
  "mollusk-svm-fuzz-fixture-firedancer",
@@ -1652,6 +1653,25 @@ dependencies = [
  "solana-sysvar",
  "solana-timings",
  "solana-transaction-context",
+]
+
+[[package]]
+name = "mollusk-svm-agave-programs"
+version = "0.1.5"
+dependencies = [
+ "agave-feature-set",
+ "bincode",
+ "solana-account",
+ "solana-bpf-loader-program",
+ "solana-compute-budget",
+ "solana-loader-v3-interface",
+ "solana-loader-v4-interface",
+ "solana-program-runtime",
+ "solana-pubkey",
+ "solana-rent",
+ "solana-sdk-ids",
+ "solana-stake-program",
+ "solana-system-program",
 ]
 
 [[package]]

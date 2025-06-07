@@ -37,7 +37,7 @@ pub mod precompile_keys {
         secp256r1_program::ID as SECP256R1_PROGRAM,
     };
 
-    pub(crate) fn is_precompile(program_id: &Pubkey) -> bool {
+    pub fn is_precompile(program_id: &Pubkey) -> bool {
         matches!(
             *program_id,
             ED25519_PROGRAM | SECP256K1_PROGRAM | SECP256R1_PROGRAM
@@ -75,7 +75,7 @@ impl Default for ProgramCache {
 }
 
 impl ProgramCache {
-    pub(crate) fn cache(&self) -> RefMut<ProgramCacheForTxBatch> {
+    pub fn cache(&self) -> RefMut<ProgramCacheForTxBatch> {
         self.cache.borrow_mut()
     }
 
@@ -131,7 +131,7 @@ impl ProgramCache {
     // NOTE: These are only stubs. This will "just work", since Agave's SVM
     // stubs out program accounts in transaction execution already, noting that
     // the ELFs are already where they need to be: in the cache.
-    pub(crate) fn get_all_keyed_program_accounts(&self) -> Vec<(Pubkey, Account)> {
+    pub fn get_all_keyed_program_accounts(&self) -> Vec<(Pubkey, Account)> {
         self.entries_cache
             .borrow()
             .iter()
