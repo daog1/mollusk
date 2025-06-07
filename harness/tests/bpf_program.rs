@@ -22,7 +22,7 @@ fn test_write_data() {
 
     let data = &[1, 2, 3, 4, 5];
     let space = data.len();
-    let lamports = mollusk.sysvars.rent.minimum_balance(space);
+    let lamports = mollusk.svm.sysvars.rent.minimum_balance(space);
 
     let key = Pubkey::new_unique();
     let account = Account::new(lamports, space, &program_id);
@@ -233,7 +233,7 @@ fn test_cpi() {
 
     let data = &[1, 2, 3, 4, 5];
     let space = data.len();
-    let lamports = mollusk.sysvars.rent.minimum_balance(space);
+    let lamports = mollusk.svm.sysvars.rent.minimum_balance(space);
 
     let key = Pubkey::new_unique();
     let account = Account::new(lamports, space, &cpi_target_program_id);
@@ -417,7 +417,7 @@ fn test_account_checks_rent_exemption() {
     let data_len = 8;
     let data = vec![4; data_len];
 
-    let rent_exempt_lamports = mollusk.sysvars.rent.minimum_balance(data_len);
+    let rent_exempt_lamports = mollusk.svm.sysvars.rent.minimum_balance(data_len);
     let not_rent_exempt_lamports = rent_exempt_lamports - 1;
 
     struct TestCheckContext<'a> {
@@ -449,7 +449,7 @@ fn test_account_checks_rent_exemption() {
                 &[Check::account(&key).rent_exempt().build()],
                 &mollusk.config,
                 &TestCheckContext {
-                    rent: &mollusk.sysvars.rent,
+                    rent: &mollusk.svm.sysvars.rent,
                 },
             )
     };

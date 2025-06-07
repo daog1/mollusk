@@ -7,15 +7,14 @@ use {
     agave_feature_set::FeatureSet,
     agave_precompiles::get_precompile,
     mollusk_svm_agave_programs::ProgramCache,
+    mollusk_svm_agave_sysvars::Sysvars,
     mollusk_svm_error::error::{MolluskError, MolluskPanic},
+    solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_hash::Hash,
     solana_instruction::{error::InstructionError, Instruction},
     solana_log_collector::LogCollector,
-    solana_program_runtime::{
-        invoke_context::{EnvironmentConfig, InvokeContext},
-        sysvar_cache::SysvarCache,
-    },
+    solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext},
     solana_pubkey::Pubkey,
     solana_timings::ExecuteTimings,
     solana_transaction_context::{InstructionAccount, TransactionContext},
@@ -25,6 +24,7 @@ use {
 #[derive(Default)]
 pub struct AgaveSVM {
     pub program_cache: ProgramCache,
+    pub sysvars: Sysvars,
 }
 
 impl AgaveSVM {
@@ -45,9 +45,9 @@ impl AgaveSVM {
     pub fn process_instruction(
         &self,
         instruction: &Instruction,
+        accounts: &[(Pubkey, Account)],
         instruction_accounts: &[InstructionAccount],
         transaction_context: &mut TransactionContext,
-        sysvar_cache: &SysvarCache,
         program_id_index: u16,
         compute_budget: ComputeBudget,
         feature_set: Arc<FeatureSet>,
@@ -57,6 +57,7 @@ impl AgaveSVM {
         timings: &mut ExecuteTimings,
     ) -> Result<(), InstructionError> {
         let mut program_cache = self.program_cache.cache();
+        let sysvar_cache = self.sysvars.setup_sysvar_cache(accounts);
 
         let mut invoke_context = InvokeContext::new(
             transaction_context,
@@ -67,7 +68,7 @@ impl AgaveSVM {
                 0,
                 &|_| 0,
                 feature_set,
-                sysvar_cache,
+                &sysvar_cache,
             ),
             logger,
             compute_budget,

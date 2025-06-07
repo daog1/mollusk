@@ -12,7 +12,9 @@ version = { workspace = true }
 agave-feature-set = { workspace = true }
 agave-precompiles = { workspace = true }
 mollusk-svm-agave-programs = { workspace = true }
+mollusk-svm-agave-sysvars = { workspace = true }
 mollusk-svm-error = { workspace = true }
+solana-account = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-hash = { workspace = true }
 solana-instruction = { workspace = true }

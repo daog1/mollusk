@@ -116,8 +116,8 @@ impl<'a> TestSetup<'a> {
         assert_eq!(fixture.input.compute_budget, self.mollusk.compute_budget);
         // Feature set matches, but it can't guarantee sorting.
         compare_feature_sets(&fixture.input.feature_set, &self.mollusk.feature_set);
-        assert_eq!(fixture.input.sysvars.clock, self.mollusk.sysvars.clock);
-        assert_eq!(fixture.input.sysvars.rent, self.mollusk.sysvars.rent);
+        assert_eq!(fixture.input.sysvars.clock, self.mollusk.svm.sysvars.clock);
+        assert_eq!(fixture.input.sysvars.rent, self.mollusk.svm.sysvars.rent);
         assert_eq!(fixture.input.program_id, self.instruction.program_id);
         assert_eq!(
             fixture.input.instruction_accounts,
@@ -143,7 +143,7 @@ impl<'a> TestSetup<'a> {
         );
         assert_eq!(
             fixture.input.slot_context.slot,
-            self.mollusk.sysvars.clock.slot,
+            self.mollusk.svm.sysvars.clock.slot,
         );
         // Feature set matches, but it can't guarantee sorting.
         compare_feature_sets(

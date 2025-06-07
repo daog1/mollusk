@@ -458,7 +458,6 @@ use {
     crate::{account_store::AccountStore, compile_accounts::CompiledAccounts},
     agave_feature_set::FeatureSet,
     mollusk_svm_agave::AgaveSVM,
-    mollusk_svm_agave_sysvars::Sysvars,
     mollusk_svm_result::{Check, CheckContext, Config, ContextResult, InstructionResult},
     solana_account::Account,
     solana_compute_budget::compute_budget::ComputeBudget,
@@ -483,7 +482,6 @@ pub struct Mollusk {
     pub feature_set: FeatureSet,
     pub fee_structure: FeeStructure,
     pub logger: Option<Rc<RefCell<LogCollector>>>,
-    pub sysvars: Sysvars,
     pub svm: AgaveSVM,
     #[cfg(feature = "fuzz-fd")]
     pub slot: u64,
@@ -515,7 +513,6 @@ impl Default for Mollusk {
             feature_set,
             fee_structure: FeeStructure::default(),
             logger: None,
-            sysvars: Sysvars::default(),
             svm: AgaveSVM::default(),
             #[cfg(feature = "fuzz-fd")]
             slot: 0,
@@ -525,7 +522,7 @@ impl Default for Mollusk {
 
 impl CheckContext for Mollusk {
     fn is_rent_exempt(&self, lamports: u64, space: usize) -> bool {
-        self.sysvars.rent.is_exempt(lamports, space)
+        self.svm.sysvars.rent.is_exempt(lamports, space)
     }
 }
 
@@ -579,7 +576,7 @@ impl Mollusk {
 
     /// Warp the test environment to a slot by updating sysvars.
     pub fn warp_to_slot(&mut self, slot: u64) {
-        self.sysvars.warp_to_slot(slot)
+        self.svm.sysvars.warp_to_slot(slot)
     }
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
@@ -609,28 +606,25 @@ impl Mollusk {
         // [VM]: Same here as above.
         let mut transaction_context = TransactionContext::new(
             transaction_accounts,
-            self.sysvars.rent.clone(),
+            self.svm.sysvars.rent.clone(),
             self.compute_budget.max_instruction_stack_depth,
             self.compute_budget.max_instruction_trace_length,
         );
 
         // [VM]: This whole block is just the setup to invoke the Agave sBPF VM.
-        let invoke_result = {
-            let sysvar_cache = self.sysvars.setup_sysvar_cache(accounts);
-            self.svm.process_instruction(
-                instruction,
-                &instruction_accounts,
-                &mut transaction_context,
-                &sysvar_cache,
-                program_id_index,
-                self.compute_budget,
-                Arc::new(self.feature_set.clone()),
-                self.fee_structure.lamports_per_signature,
-                self.logger.clone(),
-                &mut compute_units_consumed,
-                &mut timings,
-            )
-        };
+        let invoke_result = self.svm.process_instruction(
+            instruction,
+            accounts,
+            &instruction_accounts,
+            &mut transaction_context,
+            program_id_index,
+            self.compute_budget,
+            Arc::new(self.feature_set.clone()),
+            self.fee_structure.lamports_per_signature,
+            self.logger.clone(),
+            &mut compute_units_consumed,
+            &mut timings,
+        );
 
         // [VM]: This should be a required output in the interface.
         let return_data = transaction_context.get_return_data().1.to_vec();
@@ -821,7 +815,7 @@ impl Mollusk {
         } = fuzz::mollusk::parse_fixture_context(&fixture.input);
         self.compute_budget = compute_budget;
         self.feature_set = feature_set;
-        self.sysvars = sysvars;
+        self.svm.sysvars = sysvars;
         self.process_instruction(&instruction, &accounts)
     }
 

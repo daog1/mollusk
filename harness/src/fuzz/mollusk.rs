@@ -81,7 +81,7 @@ pub fn build_fixture_from_mollusk_test(
         &mollusk.compute_budget,
         &mollusk.feature_set,
         instruction,
-        &mollusk.sysvars,
+        &mollusk.svm.sysvars,
     );
     // This should probably be built from the checks, but there's currently no
     // mechanism to enforce full check coverage on a result.
