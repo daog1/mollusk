@@ -89,6 +89,10 @@ test:
 	@$(MAKE) build-test-programs
 	@cargo test --all-features
 
+test-register-metadata:
+	@cargo build-sbf --manifest-path test-programs/register-metadata/Cargo.toml
+	@cargo test -p mollusk-svm --test register_metadata
+
 # Run all checks in sequence
 all-checks:
 	@echo "Running all checks..."
