@@ -20,9 +20,113 @@ license-file = "LICENSE"
 edition = "2021"
 version = "0.2.1"
 
+[patch.crates-io]
+# Patch all SDK crates to use local versions to avoid version conflicts
+# This ensures solana-stake-interface and solana-system-interface use our SDK
+solana-account = { path = "../sdk/account" }
+solana-account-info = { path = "../sdk/account-info" }
+solana-address-lookup-table-interface = { path = "../sdk/address-lookup-table-interface" }
+solana-atomic-u64 = { path = "../sdk/atomic-u64" }
+solana-big-mod-exp = { path = "../sdk/big-mod-exp" }
+solana-bincode = { path = "../sdk/bincode" }
+solana-blake3-hasher = { path = "../sdk/blake3-hasher" }
+solana-bls-signatures = { path = "../sdk/bls-signatures" }
+solana-bn254 = { path = "../sdk/bn254" }
+solana-borsh = { path = "../sdk/borsh" }
+solana-client-traits = { path = "../sdk/client-traits" }
+solana-clock = { path = "../sdk/clock" }
+solana-cluster-type = { path = "../sdk/cluster-type" }
+solana-commitment-config = { path = "../sdk/commitment-config" }
+solana-compute-budget-interface = { path = "../sdk/compute-budget-interface" }
+solana-cpi = { path = "../sdk/cpi" }
+solana-decode-error = { path = "../sdk/decode-error" }
+solana-define-syscall = { path = "../sdk/define-syscall" }
+solana-derivation-path = { path = "../sdk/derivation-path" }
+solana-ed25519-program = { path = "../sdk/ed25519-program" }
+solana-epoch-info = { path = "../sdk/epoch-info" }
+solana-epoch-rewards = { path = "../sdk/epoch-rewards" }
+solana-epoch-rewards-hasher = { path = "../sdk/epoch-rewards-hasher" }
+solana-epoch-schedule = { path = "../sdk/epoch-schedule" }
+solana-example-mocks = { path = "../sdk/example-mocks" }
+solana-feature-gate-interface = { path = "../sdk/feature-gate-interface" }
+solana-feature-set = { path = "../sdk/feature-set" }
+solana-feature-set-interface = { path = "../sdk/feature-set-interface" }
+solana-fee-calculator = { path = "../sdk/fee-calculator" }
+solana-fee-structure = { path = "../sdk/fee-structure" }
+solana-file-download = { path = "../sdk/file-download" }
+solana-frozen-abi = { path = "../sdk/frozen-abi" }
+solana-frozen-abi-macro = { path = "../sdk/frozen-abi-macro" }
+solana-genesis-config = { path = "../sdk/genesis-config" }
+solana-hard-forks = { path = "../sdk/hard-forks" }
+solana-hash = { path = "../sdk/hash" }
+solana-inflation = { path = "../sdk/inflation" }
+solana-instruction = { path = "../sdk/instruction" }
+solana-instructions-sysvar = { path = "../sdk/instructions-sysvar" }
+solana-keccak-hasher = { path = "../sdk/keccak-hasher" }
+solana-keypair = { path = "../sdk/keypair" }
+solana-last-restart-slot = { path = "../sdk/last-restart-slot" }
+solana-loader-v2-interface = { path = "../sdk/loader-v2-interface" }
+solana-loader-v3-interface = { path = "../sdk/loader-v3-interface" }
+solana-loader-v4-interface = { path = "../sdk/loader-v4-interface" }
+solana-logger = { path = "../sdk/logger" }
+solana-message = { path = "../sdk/message" }
+solana-msg = { path = "../sdk/msg" }
+solana-native-token = { path = "../sdk/native-token" }
+solana-nonce = { path = "../sdk/nonce" }
+solana-nonce-account = { path = "../sdk/nonce-account" }
+solana-offchain-message = { path = "../sdk/offchain-message" }
+solana-package-metadata = { path = "../sdk/package-metadata" }
+solana-package-metadata-macro = { path = "../sdk/package-metadata-macro" }
+solana-packet = { path = "../sdk/packet" }
+solana-poh-config = { path = "../sdk/poh-config" }
+solana-precompile-error = { path = "../sdk/precompile-error" }
+solana-precompiles = { path = "../sdk/precompiles" }
+solana-presigner = { path = "../sdk/presigner" }
+solana-program = { path = "../sdk/program" }
+solana-program-entrypoint = { path = "../sdk/program-entrypoint" }
+solana-program-error = { path = "../sdk/program-error" }
+solana-program-memory = { path = "../sdk/program-memory" }
+solana-program-option = { path = "../sdk/program-option" }
+solana-program-pack = { path = "../sdk/program-pack" }
+solana-pubkey = { path = "../sdk/pubkey" }
+solana-quic-definitions = { path = "../sdk/quic-definitions" }
+solana-rent = { path = "../sdk/rent" }
+solana-rent-collector = { path = "../sdk/rent-collector" }
+solana-rent-debits = { path = "../sdk/rent-debits" }
+solana-reserved-account-keys = { path = "../sdk/reserved-account-keys" }
+solana-reward-info = { path = "../sdk/reward-info" }
+solana-sanitize = { path = "../sdk/sanitize" }
+solana-sdk = { path = "../sdk/sdk" }
+solana-sdk-ids = { path = "../sdk/sdk-ids" }
+solana-sdk-macro = { path = "../sdk/sdk-macro" }
+solana-secp256k1-program = { path = "../sdk/secp256k1-program" }
+solana-secp256k1-recover = { path = "../sdk/secp256k1-recover" }
+solana-secp256r1-program = { path = "../sdk/secp256r1-program" }
+solana-seed-derivable = { path = "../sdk/seed-derivable" }
+solana-seed-phrase = { path = "../sdk/seed-phrase" }
+solana-serde = { path = "../sdk/serde" }
+solana-serde-varint = { path = "../sdk/serde-varint" }
+solana-serialize-utils = { path = "../sdk/serialize-utils" }
+solana-sha256-hasher = { path = "../sdk/sha256-hasher" }
+solana-short-vec = { path = "../sdk/short-vec" }
+solana-shred-version = { path = "../sdk/shred-version" }
+solana-signature = { path = "../sdk/signature" }
+solana-signer = { path = "../sdk/signer" }
+solana-slot-hashes = { path = "../sdk/slot-hashes" }
+solana-slot-history = { path = "../sdk/slot-history" }
+solana-stable-layout = { path = "../sdk/stable-layout" }
+solana-system-transaction = { path = "../sdk/system-transaction" }
+solana-sysvar = { path = "../sdk/sysvar" }
+solana-sysvar-id = { path = "../sdk/sysvar-id" }
+solana-time-utils = { path = "../sdk/time-utils" }
+solana-transaction = { path = "../sdk/transaction" }
+solana-transaction-error = { path = "../sdk/transaction-error" }
+solana-validator-exit = { path = "../sdk/validator-exit" }
+solana-vote-interface = { path = "../sdk/vote-interface" }
+
 [workspace.dependencies]
-agave-feature-set = "2.2.6"
-agave-precompiles = "2.2.6"
+agave-feature-set = { path = "../agave/feature-set" }
+agave-precompiles = { path = "../agave/precompiles" }
 bincode = "1.3.3"
 bs58 = "0.5.1"
 chrono = "0.4.38"
@@ -52,41 +156,41 @@ serde = "1.0.203"
 serde_json = "1.0.117"
 serde_yaml = "0.9.34"
 serial_test = "2.0"
-solana-account = "2.2"
-solana-account-info = "2.2"
-solana-bpf-loader-program = "2.2"
-solana-clock = "2.2"
-solana-compute-budget = "2.2"
-solana-cpi = "2.2"
-solana-ed25519-program = "2.2"
-solana-epoch-rewards = "2.2"
-solana-epoch-schedule = "2.2"
-solana-hash = "2.2"
-solana-instruction = "2.2"
-solana-keccak-hasher = "2.2"
-solana-loader-v3-interface = "3.0"
-solana-loader-v4-interface = "2.2"
-solana-log-collector = "2.2"
-solana-logger = "2.2"
-solana-native-token = "2.2"
-solana-program-entrypoint = "2.2"
-solana-program-error = "2.2"
-solana-program-runtime = "2.2"
-solana-pubkey = "2.2"
-solana-rent = "2.2"
-solana-sdk-ids = "2.2"
-solana-secp256k1-program = "2.2"
-solana-secp256r1-program = "2.2"
-solana-slot-hashes = "2.2"
-solana-stake-interface = "1.0"
-solana-stake-program = "2.2"
-solana-system-interface = "1.0"
-solana-system-program = "2.2"
-solana-sysvar = "2.2"
-solana-sysvar-id = "2.2"
-solana-timings = "2.2"
-solana-transaction-context = "2.2"
+solana-account = { path = "../sdk/account" }
+solana-account-info = { path = "../sdk/account-info" }
+solana-bpf-loader-program = { path = "../agave/programs/bpf_loader" }
+solana-clock = { path = "../sdk/clock" }
+solana-compute-budget = { path = "../agave/compute-budget" }
+solana-cpi = { path = "../sdk/cpi" }
+solana-ed25519-program = { path = "../sdk/ed25519-program" }
+solana-epoch-rewards = { path = "../sdk/epoch-rewards" }
+solana-epoch-schedule = { path = "../sdk/epoch-schedule" }
+solana-hash = { path = "../sdk/hash" }
+solana-instruction = { path = "../sdk/instruction" }
+solana-keccak-hasher = { path = "../sdk/keccak-hasher" }
+solana-loader-v3-interface = { path = "../sdk/loader-v3-interface" }
+solana-loader-v4-interface = { path = "../sdk/loader-v4-interface" }
+solana-log-collector = { path = "../agave/log-collector" }
+solana-logger = { path = "../sdk/logger" }
+solana-native-token = { path = "../sdk/native-token" }
+solana-program-entrypoint = { path = "../sdk/program-entrypoint" }
+solana-program-error = { path = "../sdk/program-error" }
+solana-program-runtime = { path = "../agave/program-runtime" }
+solana-pubkey = { path = "../sdk/pubkey" }
+solana-rent = { path = "../sdk/rent" }
+solana-sdk-ids = { path = "../sdk/sdk-ids" }
+solana-secp256k1-program = { path = "../sdk/secp256k1-program" }
+solana-secp256r1-program = { path = "../sdk/secp256r1-program" }
+solana-slot-hashes = { path = "../sdk/slot-hashes" }
+solana-stake-interface = "1.2.0"
+solana-stake-program = { path = "../agave/programs/stake" }
+solana-svm-callback = { path = "../agave/svm-callback" }
+solana-system-interface = "1.0.0"
+solana-system-program = { path = "../agave/programs/system" }
+solana-sysvar = { path = "../sdk/sysvar" }
+solana-sysvar-id = { path = "../sdk/sysvar-id" }
+solana-timings = { path = "../agave/timings" }
+solana-transaction-context = { path = "../agave/transaction-context" }
 thiserror = "1.0.64"
 tokio = "1.37.0"
 which = "=4.4.0"
-

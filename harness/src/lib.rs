@@ -469,7 +469,7 @@ use {
     solana_pubkey::Pubkey,
     solana_timings::ExecuteTimings,
     solana_transaction_context::TransactionContext,
-    std::{cell::RefCell, collections::HashSet, iter::once, rc::Rc, sync::Arc},
+    std::{cell::RefCell, collections::HashSet, iter::once, rc::Rc},
 };
 
 pub(crate) const DEFAULT_LOADER_KEY: Pubkey = solana_sdk_ids::bpf_loader_upgradeable::id();
@@ -616,28 +616,32 @@ impl Mollusk {
             self.compute_budget.max_instruction_trace_length,
         );
 
+        struct EpochStakeCallback;
+        impl solana_svm_callback::InvokeContextCallback for EpochStakeCallback {}
+
         let invoke_result = {
             let mut program_cache = self.program_cache.cache();
             let sysvar_cache = self.sysvars.setup_sysvar_cache(accounts);
+            let feature_set = self.feature_set.runtime_features();
             let mut invoke_context = InvokeContext::new(
                 &mut transaction_context,
                 &mut program_cache,
                 EnvironmentConfig::new(
                     Hash::default(),
                     /* blockhash_lamports_per_signature */ 5000, // The default value
-                    0,
-                    &|_| 0,
-                    Arc::new(self.feature_set.clone()),
+                    &EpochStakeCallback,
+                    &feature_set,
                     &sysvar_cache,
                 ),
                 self.logger.clone(),
-                self.compute_budget,
+                self.compute_budget.to_budget(),
+                self.compute_budget.to_cost(),
             );
-            if let Some(precompile) = get_precompile(&instruction.program_id, |feature_id| {
-                invoke_context.get_feature_set().is_active(feature_id)
+            if let Some(precompile) = get_precompile(&instruction.program_id, |_feature_id| {
+                true
             }) {
                 invoke_context.process_precompile(
-                    precompile,
+                    &precompile.program_id,
                     &instruction.data,
                     &instruction_accounts,
                     &[program_id_index],
