@@ -19,6 +19,7 @@ use {
         collections::HashMap,
         rc::Rc,
         sync::Arc,
+        sync::RwLock,
     },
 };
 
@@ -167,13 +168,13 @@ impl ProgramCache {
 }
 
 pub struct Builtin {
-    program_id: Pubkey,
+    pub program_id: Pubkey,
     name: &'static str,
     entrypoint: BuiltinFunctionWithContext,
 }
 
 impl Builtin {
-    fn program_cache_entry(&self) -> Arc<ProgramCacheEntry> {
+    pub fn program_cache_entry(&self) -> Arc<ProgramCacheEntry> {
         Arc::new(ProgramCacheEntry::new_builtin(
             0,
             self.name.len(),
@@ -182,7 +183,7 @@ impl Builtin {
     }
 }
 
-static BUILTINS: &[Builtin] = &[
+pub static BUILTINS: &[Builtin] = &[
     Builtin {
         program_id: solana_system_program::id(),
         name: "system_program",
