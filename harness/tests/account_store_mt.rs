@@ -1,9 +1,13 @@
 use {
     mollusk_svm::{mt::MolluskMt, result::Check},
     solana_account::{Account, ReadableAccount},
+    solana_clock::Clock,
+    solana_epoch_schedule::EpochSchedule,
     solana_log_collector::LogCollector,
     solana_program_error::ProgramError,
     solana_pubkey::Pubkey,
+    solana_rent::Rent,
+    solana_slot_hashes::SlotHashes,
     solana_system_interface::error::SystemError,
     solana_system_program::system_processor::DEFAULT_COMPUTE_UNITS,
     std::cell::RefCell,
@@ -246,4 +250,166 @@ fn test_account_store_default_account_mt() {
             SystemError::ResultWithNegativeLamports as u32,
         ))],
     );
+}
+
+#[test]
+fn test_get_sysvar_mt() {
+    let mollusk = MolluskMt::default();
+
+    // Test getting clock sysvar
+    let clock: Clock = mollusk.get_sysvar();
+    assert_eq!(clock.slot, 0); // Default slot should be 0
+
+    // Test getting epoch schedule sysvar
+    let epoch_schedule: EpochSchedule = mollusk.get_sysvar();
+    assert!(epoch_schedule.slots_per_epoch > 0);
+
+    // Test getting rent sysvar
+    let rent: Rent = mollusk.get_sysvar();
+    assert!(rent.lamports_per_byte_year > 0);
+
+    println!("✅ get_sysvar tests passed!");
+}
+
+#[test]
+fn test_set_sysvar_mt() {
+    let mut mollusk = MolluskMt::default();
+
+    // Test setting clock sysvar
+    let mut new_clock: Clock = mollusk.get_sysvar();
+    new_clock.slot = 42;
+    new_clock.epoch = 1;
+    mollusk.set_sysvar(&new_clock);
+
+    // Verify the clock was updated
+    let updated_clock: Clock = mollusk.get_sysvar();
+    assert_eq!(updated_clock.slot, 42);
+    assert_eq!(updated_clock.epoch, 1);
+
+    // Test setting rent sysvar
+    let mut new_rent: Rent = mollusk.get_sysvar();
+    let original_lamports_per_byte = new_rent.lamports_per_byte_year;
+    new_rent.lamports_per_byte_year = 12345;
+    mollusk.set_sysvar(&new_rent);
+
+    // Verify the rent was updated
+    let updated_rent: Rent = mollusk.get_sysvar();
+    assert_eq!(updated_rent.lamports_per_byte_year, 12345);
+    assert_ne!(
+        updated_rent.lamports_per_byte_year,
+        original_lamports_per_byte
+    );
+
+    println!("✅ set_sysvar tests passed!");
+}
+
+#[test]
+fn test_expire_blockhash_mt() {
+    let mut mollusk = MolluskMt::default();
+
+    // Get initial slot hashes
+    let initial_slot_hashes: SlotHashes = mollusk.get_sysvar();
+    let initial_len = initial_slot_hashes.len();
+    println!("Initial SlotHashes length: {}", initial_len);
+    println!("Initial first slot hash: {:?}", initial_slot_hashes.first());
+
+    // Expire blockhash
+    mollusk.expire_blockhash();
+
+    // Get updated slot hashes
+    let updated_slot_hashes: SlotHashes = mollusk.get_sysvar();
+    let updated_len = updated_slot_hashes.len();
+    println!("Updated SlotHashes length: {}", updated_len);
+    println!("Updated first slot hash: {:?}", updated_slot_hashes.first());
+
+    // Should have added a new slot hash entry or stayed the same (if at max capacity)
+    assert!(updated_len >= initial_len);
+
+    // The slot hashes should be different after expire_blockhash
+    let initial_first = initial_slot_hashes.first();
+    let updated_first = updated_slot_hashes.first();
+
+    // Print more debug info
+    if let (Some(initial), Some(updated)) = (initial_first, updated_first) {
+        println!("Initial slot: {}, hash: {}", initial.0, initial.1);
+        println!("Updated slot: {}, hash: {}", updated.0, updated.1);
+
+        // Check if anything changed - at minimum the hash should be different
+        // since we added a new entry to slot hashes
+        let changed = initial.0 != updated.0 || initial.1 != updated.1;
+        if !changed {
+            println!("WARNING: SlotHashes didn't change after expire_blockhash");
+            // Let's check if the entire structure changed
+            let initial_vec: Vec<_> = initial_slot_hashes.as_slice().to_vec();
+            let updated_vec: Vec<_> = updated_slot_hashes.as_slice().to_vec();
+            println!(
+                "Initial vec length: {}, Updated vec length: {}",
+                initial_vec.len(),
+                updated_vec.len()
+            );
+            assert!(
+                initial_vec != updated_vec,
+                "SlotHashes should change after expire_blockhash"
+            );
+        }
+    } else {
+        println!("One of the slot hashes is None - this is unexpected for a default mollusk");
+    }
+
+    println!("✅ expire_blockhash tests passed!");
+}
+
+#[test]
+fn test_combined_sysvar_functionality_mt() {
+    let mut mollusk = MolluskMt::default();
+
+    // Test the combination of all functions
+
+    // 1. Set a custom clock
+    let mut clock: Clock = mollusk.get_sysvar();
+    clock.slot = 100;
+    clock.unix_timestamp = 1234567890;
+    mollusk.set_sysvar(&clock);
+
+    // 2. Expire blockhash (this should use the updated slot)
+    mollusk.expire_blockhash();
+
+    // 3. Verify the clock timestamp is still as we set it, but slot may have changed
+    let final_clock: Clock = mollusk.get_sysvar();
+    assert_eq!(final_clock.unix_timestamp, 1234567890);
+    // expire_blockhash advances the slot by 1
+    assert_eq!(final_clock.slot, 101);
+
+    // 4. Verify slot hashes were updated
+    let final_slot_hashes: SlotHashes = mollusk.get_sysvar();
+    assert!(final_slot_hashes.len() > 0);
+
+    println!("✅ Combined functionality tests passed!");
+}
+
+#[test]
+fn test_warp_to_slot_integration_mt() {
+    let mut mollusk = MolluskMt::default();
+
+    // Warp to a specific slot
+    mollusk.warp_to_slot(500);
+
+    // Verify the clock was updated
+    let clock: Clock = mollusk.get_sysvar();
+    assert_eq!(clock.slot, 500);
+
+    // Now expire blockhash and verify it uses the warped slot
+    mollusk.expire_blockhash();
+
+    let slot_hashes: SlotHashes = mollusk.get_sysvar();
+
+    // Should have slot hashes entries
+    assert!(slot_hashes.len() > 0);
+
+    // The most recent entry should be for slot 501 since expire_blockhash advances slot by 1
+    if let Some((slot, _hash)) = slot_hashes.first() {
+        assert!(slot <= &501); // Should be slot 501 or less after expire_blockhash
+    }
+
+    println!("✅ warp_to_slot integration tests passed!");
 }

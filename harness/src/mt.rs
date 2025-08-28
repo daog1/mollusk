@@ -24,6 +24,8 @@ use {
     solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext},
     solana_pubkey::Pubkey,
     solana_svm_callback::InvokeContextCallback,
+    solana_sysvar::Sysvar,
+    solana_sysvar_id::SysvarId,
     solana_timings::ExecuteTimings,
     solana_transaction_context::TransactionContext,
     std::{cell::RefCell, collections::HashSet, iter::once, rc::Rc, sync::Arc, sync::RwLock},
@@ -137,6 +139,98 @@ impl MolluskMt {
     /// Warp the test environment to a slot by updating sysvars.
     pub fn warp_to_slot(&mut self, slot: u64) {
         self.sysvars.warp_to_slot(slot)
+    }
+
+    /// Get a sysvar from the test environment.
+    pub fn get_sysvar<T>(&self) -> T
+    where
+        T: Sysvar + SysvarId,
+    {
+        // 创建一个临时的sysvar account，然后从中反序列化
+        let (_, account) = if T::id() == solana_clock::Clock::id() {
+            self.sysvars.keyed_account_for_clock_sysvar()
+        } else if T::id() == solana_epoch_rewards::EpochRewards::id() {
+            self.sysvars.keyed_account_for_epoch_rewards_sysvar()
+        } else if T::id() == solana_epoch_schedule::EpochSchedule::id() {
+            self.sysvars.keyed_account_for_epoch_schedule_sysvar()
+        } else if T::id() == solana_sysvar::last_restart_slot::LastRestartSlot::id() {
+            self.sysvars.keyed_account_for_last_restart_slot_sysvar()
+        } else if T::id() == solana_rent::Rent::id() {
+            self.sysvars.keyed_account_for_rent_sysvar()
+        } else if T::id() == solana_slot_hashes::SlotHashes::id() {
+            self.sysvars.keyed_account_for_slot_hashes_sysvar()
+        } else if T::id() == solana_stake_interface::stake_history::StakeHistory::id() {
+            self.sysvars.keyed_account_for_stake_history_sysvar()
+        } else {
+            panic!("Unsupported sysvar type: {}", T::id());
+        };
+
+        bincode::deserialize(&account.data).unwrap()
+    }
+
+    /// Set a sysvar in the test environment.
+    pub fn set_sysvar<T>(&mut self, sysvar: &T)
+    where
+        T: Sysvar + SysvarId + Clone,
+    {
+        if T::id() == solana_clock::Clock::id() {
+            let clock = unsafe { &*(sysvar as *const T as *const solana_clock::Clock) };
+            self.sysvars.clock = clock.clone();
+        } else if T::id() == solana_epoch_rewards::EpochRewards::id() {
+            let epoch_rewards =
+                unsafe { &*(sysvar as *const T as *const solana_epoch_rewards::EpochRewards) };
+            self.sysvars.epoch_rewards = epoch_rewards.clone();
+        } else if T::id() == solana_epoch_schedule::EpochSchedule::id() {
+            let epoch_schedule =
+                unsafe { &*(sysvar as *const T as *const solana_epoch_schedule::EpochSchedule) };
+            self.sysvars.epoch_schedule = epoch_schedule.clone();
+        } else if T::id() == solana_sysvar::last_restart_slot::LastRestartSlot::id() {
+            let last_restart_slot = unsafe {
+                &*(sysvar as *const T as *const solana_sysvar::last_restart_slot::LastRestartSlot)
+            };
+            self.sysvars.last_restart_slot = last_restart_slot.clone();
+        } else if T::id() == solana_rent::Rent::id() {
+            let rent = unsafe { &*(sysvar as *const T as *const solana_rent::Rent) };
+            self.sysvars.rent = rent.clone();
+        } else if T::id() == solana_slot_hashes::SlotHashes::id() {
+            let slot_hashes =
+                unsafe { &*(sysvar as *const T as *const solana_slot_hashes::SlotHashes) };
+            // SlotHashes doesn't implement Clone, so we need to reconstruct it
+            let slot_hash_entries: Vec<(u64, Hash)> = slot_hashes.as_slice().to_vec();
+            self.sysvars.slot_hashes = solana_slot_hashes::SlotHashes::new(&slot_hash_entries);
+        } else if T::id() == solana_stake_interface::stake_history::StakeHistory::id() {
+            let stake_history = unsafe {
+                &*(sysvar as *const T as *const solana_stake_interface::stake_history::StakeHistory)
+            };
+            self.sysvars.stake_history = stake_history.clone();
+        } else {
+            panic!("Unsupported sysvar type: {}", T::id());
+        }
+    }
+
+    /// Expire the current blockhash by creating a new one.
+    pub fn expire_blockhash(&mut self) {
+        // Create a new blockhash based on the current slot + timestamp
+        let current_slot = self.sysvars.clock.slot;
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let mut hash_data = [0u8; 32];
+        hash_data[0..8].copy_from_slice(&current_slot.to_le_bytes());
+        hash_data[8..16].copy_from_slice(&current_time.to_le_bytes());
+        hash_data[16] = 0xFF; // Add some entropy
+
+        let new_hash = Hash::new_from_array(hash_data);
+
+        // To truly expire the blockhash, we need to add a new slot hash entry
+        // Add the new hash for the next slot to simulate blockhash progression
+        let next_slot = current_slot + 1;
+        self.sysvars.slot_hashes.add(next_slot, new_hash);
+
+        // Also update the clock to reflect the progression
+        self.sysvars.clock.slot = next_slot;
     }
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
