@@ -232,6 +232,14 @@ impl MolluskMt {
         // Also update the clock to reflect the progression
         self.sysvars.clock.slot = next_slot;
     }
+    /// Returns minimum balance required to make an account with specified data length rent exempt.
+    pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
+        1.max(
+            self.sysvars
+                .rent
+                .minimum_balance(data_len),
+        )
+    }
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
     /// environment. Simply returns the result.

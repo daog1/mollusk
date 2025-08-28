@@ -140,6 +140,27 @@ fn test_warp_to_slot_integration() {
     println!("✅ warp_to_slot integration tests passed!");
 }
 
+#[test]
+fn test_minimum_balance_for_rent_exemption() {
+    let mollusk = MolluskMt::default();
+    
+    // Test with 0 data length
+    let min_balance_zero = mollusk.minimum_balance_for_rent_exemption(0);
+    assert!(min_balance_zero >= 1); // Should be at least 1 lamport
+    
+    // Test with some data length
+    let data_len = 100;
+    let min_balance = mollusk.minimum_balance_for_rent_exemption(data_len);
+    assert!(min_balance >= min_balance_zero); // Larger data should cost more or equal
+    
+    // Test with larger data length
+    let larger_data_len = 1000;
+    let min_balance_larger = mollusk.minimum_balance_for_rent_exemption(larger_data_len);
+    assert!(min_balance_larger >= min_balance); // Larger data should cost more or equal
+    
+    println!("✅ minimum_balance_for_rent_exemption tests passed!");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -151,6 +172,7 @@ mod tests {
         test_expire_blockhash();
         test_combined_functionality();
         test_warp_to_slot_integration();
+        test_minimum_balance_for_rent_exemption();
 
         println!("🎉 All MolluskMt sysvar function tests passed!");
     }
