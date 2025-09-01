@@ -23,8 +23,11 @@ use {
     solana_precompile_error::PrecompileError,
     solana_program_runtime::invoke_context::{EnvironmentConfig, InvokeContext},
     solana_pubkey::Pubkey,
+    solana_sdk_ids,
     solana_svm_callback::InvokeContextCallback,
     solana_sysvar::Sysvar,
+    solana_clock::Clock,
+    solana_rent::Rent,
     solana_sysvar_id::SysvarId,
     solana_timings::ExecuteTimings,
     solana_transaction_context::TransactionContext,
@@ -234,11 +237,7 @@ impl MolluskMt {
     }
     /// Returns minimum balance required to make an account with specified data length rent exempt.
     pub fn minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
-        1.max(
-            self.sysvars
-                .rent
-                .minimum_balance(data_len),
-        )
+        1.max(self.sysvars.rent.minimum_balance(data_len))
     }
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
@@ -380,6 +379,7 @@ impl MolluskMt {
         {
             crate::program::loader_keys::NATIVE_LOADER
         } else {
+            println!("instruction.program_id {}",instruction.program_id.to_string());
             self.program_cache
                 .load_program(&instruction.program_id)
                 .or_panic_with(MolluskError::ProgramNotCached(&instruction.program_id))
@@ -949,26 +949,84 @@ impl<AS: AccountStore> MolluskContextMt<AS> {
                         let account = store
                             .get_account(pubkey)
                             .unwrap_or_else(|| store.default_account(pubkey));
-                        accounts.push((*pubkey, account));
+                        if account.clone() == Account::default() {
+                            let pubkeystr = pubkey.to_string();
+                            println!("Account::default {}",pubkeystr);
+                            accounts.push((*pubkey, account.clone()));
+                            //return;
+                        } else {
+                            // println!("Account::load {}",pubkey.to_string());
+                            if solana_sdk_ids::sysvar::check_id(pubkey) {
+                                println!("sysvar check_id");
+                            }
+                            accounts.push((*pubkey, account.clone()));
+                        }
+                        /*if account.executable != true {
+
+                        }else{
+                            println!("account.executable == true")
+                        }*/
                     }
                 });
         });
         accounts
     }
 
-    fn consume_mollusk_result(&self, result: InstructionResult) -> ContextResult {
+    fn consume_mollusk_result(
+        &mut self,
+        result: InstructionResult,
+        simulated: bool,
+    ) -> ContextResult {
         let InstructionResult {
             compute_units_consumed,
             execution_time,
             program_result,
             raw_result,
             return_data,
-            resulting_accounts,
+            mut resulting_accounts,
         } = result;
 
         let mut store = self.account_store.write().unwrap();
+        // need to add programdata accounts first if there are any
+        itertools::partition(&mut resulting_accounts, |x| {
+            x.1.owner == solana_sdk_ids::bpf_loader_upgradeable::id()
+                && x.1.data.first().is_some_and(|byte| *byte == 3)
+        });
         for (pubkey, account) in resulting_accounts {
-            store.store_account(pubkey, account);
+            println!("consume {} {:?}", pubkey, account);
+            /*if account.executable {
+
+            }*/
+            if pubkey == solana_sdk_ids::bpf_loader_upgradeable::id() {
+                println!("bpf_loader_upgradeable {} {:?}", pubkey, account);
+            }
+            if account.executable
+                && pubkey != Pubkey::default()
+                && account.owner != solana_sdk_ids::native_loader::id()
+            {
+                self.mollusk.add_program_with_elf_and_loader(
+                    &pubkey,
+                    &account.data,
+                    &DEFAULT_LOADER_KEY,
+                );
+            } else {
+                if pubkey == solana_sdk_ids::sysvar::clock::id() {
+                    let parsed: Clock = bincode::deserialize(&account.data).unwrap();
+                    self.mollusk.set_sysvar(&parsed);
+                }
+                if pubkey == solana_sdk_ids::sysvar::rent::id() {
+                    let parsed: Rent = bincode::deserialize(&account.data).unwrap();
+                    self.mollusk.set_sysvar(&parsed);
+                }
+                /*if account.executable {
+
+                    println!("account.executable {} {:?}", pubkey, account);
+                }*/
+                // self.mollusk.set_sysvar()
+            }
+            if (!simulated) {
+                store.store_account(pubkey, account.clone());
+            }
         }
 
         ContextResult {
@@ -982,55 +1040,57 @@ impl<AS: AccountStore> MolluskContextMt<AS> {
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
     /// environment. Simply returns the result.
-    pub fn process_instruction(&self, instruction: &Instruction) -> ContextResult {
+    /*pub fn process_instruction(&self, instruction: &Instruction) -> ContextResult {
         let accounts = self.load_accounts_for_instructions(once(instruction));
         let result = self.mollusk.process_instruction(instruction, &accounts);
         self.consume_mollusk_result(result)
-    }
+    }*/
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
     /// environment. Simply returns the result.
     pub fn process_instruction_log(
-        &self,
+        &mut self,
         instruction: &Instruction,
         log: Option<Rc<RefCell<LogCollector>>>,
+        simulated: bool,
     ) -> (ContextResult, TransactionContext) {
         let accounts = self.load_accounts_for_instructions(once(instruction));
 
         let result = self
             .mollusk
             .process_instruction_log(instruction, &accounts, log);
-        (self.consume_mollusk_result(result.0), result.1)
+        (self.consume_mollusk_result(result.0, simulated), result.1)
     }
 
     /// Process a chain of instructions using the minified Solana Virtual
     /// Machine (SVM) environment.
-    pub fn process_instruction_chain(&self, instructions: &[Instruction]) -> ContextResult {
+    pub fn process_instruction_chain(&mut self, instructions: &[Instruction]) -> ContextResult {
         let accounts = self.load_accounts_for_instructions(instructions.iter());
         let result = self
             .mollusk
             .process_instruction_chain(instructions, &accounts);
-        self.consume_mollusk_result(result)
+        self.consume_mollusk_result(result, false)
     }
 
     /// Process a chain of instructions using the minified Solana Virtual
     /// Machine (SVM) environment.
     pub fn process_instruction_chain_log(
-        &self,
+        &mut self,
         instructions: &[Instruction],
         log: Option<Rc<RefCell<LogCollector>>>,
+        simulated: bool,
     ) -> (ContextResult, TransactionContext) {
         let accounts = self.load_accounts_for_instructions(instructions.iter());
         let result = self
             .mollusk
             .process_instruction_chain_log(instructions, &accounts, log);
-        (self.consume_mollusk_result(result.0), result.1)
+        (self.consume_mollusk_result(result.0, simulated), result.1)
     }
 
     /// Process an instruction using the minified Solana Virtual Machine (SVM)
     /// environment, then perform checks on the result.
     pub fn process_and_validate_instruction(
-        &self,
+        &mut self,
         instruction: &Instruction,
         checks: &[Check],
     ) -> ContextResult {
@@ -1038,13 +1098,13 @@ impl<AS: AccountStore> MolluskContextMt<AS> {
         let result = self
             .mollusk
             .process_and_validate_instruction(instruction, &accounts, checks);
-        self.consume_mollusk_result(result)
+        self.consume_mollusk_result(result, false)
     }
 
     /// Process a chain of instructions using the minified Solana Virtual
     /// Machine (SVM) environment, then perform checks on the result.
     pub fn process_and_validate_instruction_chain(
-        &self,
+        &mut self,
         instructions: &[(&Instruction, &[Check])],
     ) -> ContextResult {
         let accounts = self.load_accounts_for_instructions(
@@ -1053,6 +1113,6 @@ impl<AS: AccountStore> MolluskContextMt<AS> {
         let result = self
             .mollusk
             .process_and_validate_instruction_chain(instructions, &accounts);
-        self.consume_mollusk_result(result)
+        self.consume_mollusk_result(result, false)
     }
 }

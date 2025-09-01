@@ -37,7 +37,7 @@ fn test_transfer_with_context_mt() {
         Account::new(base_lamports, 0, &solana_sdk_ids::system_program::id()),
     );
 
-    let context = mollusk.with_context(account_store);
+    let mut context = mollusk.with_context(account_store);
 
     // Process the transfer instruction
     /*  let result = context.process_and_validate_instruction(
@@ -57,6 +57,7 @@ fn test_transfer_with_context_mt() {
     let result = context.process_instruction_log(
         &solana_system_interface::instruction::transfer(&sender, &recipient, transfer_amount),
         Some(log.clone()),
+        false,
     );
     println!("logs: {:?}", result.0.program_result);
     println!("logs: {:?}", log.borrow().get_recorded_content());
@@ -105,7 +106,7 @@ fn test_multiple_transfers_with_persistent_state_mt() {
         Account::new(initial_lamports, 0, &solana_sdk_ids::system_program::id()),
     );
 
-    let context = mollusk.with_context(account_store);
+    let mut context = mollusk.with_context(account_store);
 
     let checks = vec![
         Check::success(),
@@ -174,7 +175,7 @@ fn test_multiple_transfers_with_persistent_state_mt_chain() {
         Account::new(initial_lamports, 0, &solana_sdk_ids::system_program::id()),
     );
 
-    let context = mollusk.with_context(account_store);
+    let mut context = mollusk.with_context(account_store);
 
     let checks = vec![
         Check::success(),
@@ -205,6 +206,7 @@ fn test_multiple_transfers_with_persistent_state_mt_chain() {
             solana_system_interface::instruction::transfer(&bob, &charlie, transfer2_amount),
         ],
         Some(log.clone()),
+        false,
     );
 
     println!("logs: {:?}", log.borrow().get_recorded_content());
@@ -234,7 +236,7 @@ fn test_multiple_transfers_with_persistent_state_mt_chain() {
 #[test]
 fn test_account_store_default_account_mt() {
     let mollusk = MolluskMt::default();
-    let context = mollusk.with_context(HashMap::new());
+    let mut context = mollusk.with_context(HashMap::new());
 
     let non_existent_key = Pubkey::new_unique();
     let recipient = Pubkey::new_unique();

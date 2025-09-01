@@ -86,6 +86,8 @@ impl MtProgramCache {
     }
 
     pub(crate) fn cache(&self) -> std::sync::RwLockWriteGuard<'_, ProgramCacheForTxBatch> {
+        /*self.cache.write().unwrap().environments.program_runtime_v1 =
+        Arc::new(self.program_runtime_environment); //.clone().into();*/
         self.cache.write().unwrap()
     }
 

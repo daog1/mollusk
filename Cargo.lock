@@ -1796,6 +1796,7 @@ dependencies = [
  "bincode",
  "criterion",
  "ed25519-dalek",
+ "itertools 0.12.1",
  "libsecp256k1",
  "mollusk-svm-error",
  "mollusk-svm-fuzz-fixture",
