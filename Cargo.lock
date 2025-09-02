@@ -3530,6 +3530,7 @@ dependencies = [
  "solana-instruction",
  "solana-pubkey",
  "solana-sdk-ids",
+ "solana-system-interface",
 ]
 
 [[package]]

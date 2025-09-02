@@ -86,9 +86,22 @@ impl MtProgramCache {
     }
 
     pub(crate) fn cache(&self) -> std::sync::RwLockWriteGuard<'_, ProgramCacheForTxBatch> {
-        /*self.cache.write().unwrap().environments.program_runtime_v1 =
-        Arc::new(self.program_runtime_environment); //.clone().into();*/
-        self.cache.write().unwrap()
+        let mut cache = self.cache.write().unwrap();
+        // Create a new environment based on the current program_runtime_environment
+        let config = self.program_runtime_environment.get_config().clone();
+        let mut loader = BuiltinProgram::new_loader(config);
+        
+        for (_key, (name, value)) in self
+            .program_runtime_environment
+            .get_function_registry()
+            .iter()
+        {
+            let name = std::str::from_utf8(name).unwrap();
+            loader.register_function(name, value).unwrap();
+        }
+        
+        cache.environments.program_runtime_v1 = Arc::new(loader);
+        cache
     }
 
     fn replenish(&self, program_id: Pubkey, entry: Arc<ProgramCacheEntry>) {

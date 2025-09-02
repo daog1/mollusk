@@ -19,7 +19,6 @@ use {
         collections::HashMap,
         rc::Rc,
         sync::Arc,
-        sync::RwLock,
     },
 };
 
