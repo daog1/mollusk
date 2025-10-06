@@ -185,13 +185,13 @@ impl ProgramCache {
 }
 
 pub struct Builtin {
-    program_id: Pubkey,
-    name: &'static str,
-    entrypoint: BuiltinFunctionWithContext,
+    pub program_id: Pubkey,
+    pub name: &'static str,
+    pub entrypoint: BuiltinFunctionWithContext,
 }
 
 impl Builtin {
-    fn program_cache_entry(&self) -> Arc<ProgramCacheEntry> {
+    pub fn program_cache_entry(&self) -> Arc<ProgramCacheEntry> {
         Arc::new(ProgramCacheEntry::new_builtin(
             0,
             self.name.len(),

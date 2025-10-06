@@ -10,7 +10,7 @@ edition = { workspace = true }
 version = { workspace = true }
 
 [features]
-default = []
+default = ["serde"]
 all-builtins = [
     "dep:solana-loader-v4-program",
     "dep:solana-stake-program",
@@ -26,7 +26,6 @@ fuzz-fd = [
 ]
 invocation-inspect-callback = []
 serde = [
-    "dep:serde",
     "mollusk-svm-result/serde",
 ]
 
@@ -35,7 +34,7 @@ agave-feature-set = { workspace = true }
 agave-precompiles = { workspace = true }
 agave-syscalls = { workspace = true }
 bincode = { workspace = true }
-serde = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"] }
 mollusk-svm-error = { workspace = true }
 mollusk-svm-fuzz-fixture = { workspace = true, optional = true }
 mollusk-svm-fuzz-fixture-firedancer = { workspace = true, optional = true }
@@ -71,6 +70,7 @@ solana-system-program = { workspace = true }
 solana-sysvar = { workspace = true }
 solana-sysvar-id = { workspace = true }
 solana-transaction-context = { workspace = true, features = ["dev-context-only-utils"] }
+itertools = "0.14.0"
 
 [dev-dependencies]
 criterion = { workspace = true }

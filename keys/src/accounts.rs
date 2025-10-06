@@ -47,30 +47,58 @@ pub fn compile_instruction_accounts(
         .collect()
 }
 
-pub fn compile_transaction_accounts_for_instruction(
+pub fn compile_transaction_accounts_for_instruction_from_store<AS>(
     key_map: &KeyMap,
     instruction: &Instruction,
-    accounts: &[(Pubkey, Account)],
+    account_store: &AS,
     stub_out_program_account: Option<Box<dyn Fn() -> Account>>,
-) -> Vec<TransactionAccount> {
+) -> Vec<TransactionAccount>
+where
+    AS: Fn(&Pubkey) -> Option<Account>,
+{
     key_map
         .keys()
         .map(|key| {
-            let account = accounts
-                .iter()
-                .find(|(k, _)| k == key)
-                .map(|(_, account)| AccountSharedData::from(account.clone()));
-
-            if let Some(account) = account {
-                (*key, account)
+            // Try to get account from the account store first
+            if let Some(account) = account_store(&key) {
+                (*key, account.into())
             } else if let Some(stub_out_program_account) = &stub_out_program_account {
                 if instruction.program_id == *key {
                     (*key, stub_out_program_account().into())
                 } else {
-                    panic!("{}", MolluskError::AccountMissing(key))
+                    panic!("{}", MolluskError::AccountMissing(&key))
                 }
             } else {
-                panic!("{}", MolluskError::AccountMissing(key))
+                panic!("{}", MolluskError::AccountMissing(&key))
+            }
+        })
+        .collect()
+}
+
+pub fn compile_transaction_accounts_from_store<AS>(
+    key_map: &KeyMap,
+    instructions: &[Instruction],
+    account_store: &AS,
+    stub_out_program_account: Option<Box<dyn Fn() -> Account>>,
+) -> Vec<TransactionAccount>
+where
+    AS: Fn(&Pubkey) -> Option<Account>,
+{
+    key_map
+        .keys()
+        .map(|key| {
+            // Try to get account from the account store first
+            if let Some(account) = account_store(&key) {
+                (*key, account.into())
+            } else if let Some(stub_out_program_account) = &stub_out_program_account {
+                // Check if this key is a program ID for any of the instructions
+                if instructions.iter().any(|ix| ix.program_id == *key) {
+                    (*key, stub_out_program_account().into())
+                } else {
+                    panic!("{}", MolluskError::AccountMissing(&key))
+                }
+            } else {
+                panic!("{}", MolluskError::AccountMissing(&key))
             }
         })
         .collect()
