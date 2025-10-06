@@ -12,3 +12,9 @@ target/
 .DS_Store
 
 harness/tests/test-vectors/
+
+# IDE files
+.idea/
+
+# Backup files
+bak/
